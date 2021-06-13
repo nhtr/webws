@@ -1,2 +1,2 @@
 # webws
-First Python web with django
+Tutorial Python web with django
