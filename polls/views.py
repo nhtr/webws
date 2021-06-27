@@ -5,22 +5,34 @@ from django.views import generic
 
 from .models import Question, Choice
 from django.template import loader
+from django.utils import timezone
 
 # Create your views here.
 
 
 class IndexView(generic.ListView):
     template_name = 'index.html'
-    context_object_name = 'last_question_list'
+    context_object_name = 'latest_question_list'
 
     def get_queryset(self):
-        """Return the last five published questions."""
-        return Question.objects.order_by('-pub_date')[:5]
+        """
+        Return the last five published questions (not including those set to be
+        published in the future).
+        """
+        return Question.objects.filter(
+            pub_date__lte=timezone.now()
+        ).order_by('-pub_date')[:5]
 
 
 class DetailView(generic.DetailView):
     model = Question
     template_name = 'detail.html'
+
+    def get_queryset(self):
+        """
+        Excludes any questions that aren't published yet.
+        """
+        return Question.objects.filter(pub_date__lte=timezone.now())
 
 
 class ResultsView(generic.DetailView):
@@ -29,12 +41,15 @@ class ResultsView(generic.DetailView):
 
 
 def index(request):
-    last_question_list = Question.objects.order_by('-pub_date')[:5]
-    template = loader.get_template('index.html')
-    context = {
-        'last_question_list': last_question_list,
-    }
-    return HttpResponse(template.render(context, request))
+    # latest_question_list = Question.objects.order_by('-pub_date')[:5]
+    # template = loader.get_template('index.html')
+    # context = {
+    #     'latest_question_list': latest_question_list,
+    # }
+    # return HttpResponse(template.render(context, request))
+    latest_question_list = Question.objects.filter(pub_date__lte=timezone.now()).order_by('-pub_date')[:5]
+    context = {'latest_question_list': latest_question_list}
+    return render(request, 'index.html', context)
 
 
 def detail(request, question_id):
